@@ -1,0 +1,80 @@
+Option Explicit
+
+' PDFをWordで開いてテキストを抽出し、Excelシートに行単位で出力
+Public Sub ExtractTextFromPdf_UsingWord()
+    Dim pdfPath As String
+    pdfPath = "C:\temp\input.pdf"  ' ★変更
+    
+    If Dir(pdfPath) = "" Then
+        MsgBox "PDFが見つかりません: " & pdfPath, vbCritical
+        Exit Sub
+    End If
+    
+    Dim wdApp As Object ' Word.Application
+    Dim wdDoc As Object ' Word.Document
+    Dim rawText As String
+    
+    On Error GoTo EH
+    
+    Set wdApp = CreateObject("Word.Application")
+    wdApp.Visible = False
+    wdApp.DisplayAlerts = 0 ' wdAlertsNone
+    
+    ' ConfirmConversions:=False / ReadOnly:=True でPDFを開く（Wordが内部変換する）
+    Set wdDoc = wdApp.Documents.Open( _
+        FileName:=pdfPath, _
+        ConfirmConversions:=False, _
+        ReadOnly:=True, _
+        AddToRecentFiles:=False)
+    
+    ' ドキュメント全文テキスト
+    rawText = wdDoc.Content.Text
+    
+    ' 後始末
+    wdDoc.Close SaveChanges:=False
+    wdApp.Quit
+    
+    Set wdDoc = Nothing
+    Set wdApp = Nothing
+    
+    ' Excelに出力（行ごと）
+    OutputTextToSheet rawText, "PDF_Text"
+    
+    MsgBox "抽出完了（PDF_Textに出力）", vbInformation
+    Exit Sub
+    
+EH:
+    On Error Resume Next
+    If Not wdDoc Is Nothing Then wdDoc.Close SaveChanges:=False
+    If Not wdApp Is Nothing Then wdApp.Quit
+    MsgBox "エラー: " & Err.Number & vbCrLf & Err.Description, vbCritical
+End Sub
+
+' テキストを行単位でシート出力（CR/LF整形込み）
+Private Sub OutputTextToSheet(ByVal rawText As String, ByVal sheetName As String)
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(sheetName)
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        Set ws = ThisWorkbook.Worksheets.Add
+        ws.Name = sheetName
+    Else
+        ws.Cells.Clear
+    End If
+    
+    ' 改行コードを統一
+    rawText = Replace(rawText, vbCrLf, vbLf)
+    rawText = Replace(rawText, vbCr, vbLf)
+    
+    Dim lines() As String
+    lines = Split(rawText, vbLf)
+    
+    Dim i As Long
+    For i = LBound(lines) To UBound(lines)
+        ws.Cells(i + 1, 1).Value = lines(i)
+    Next
+    
+    ws.Columns(1).EntireColumn.AutoFit
+End Sub
