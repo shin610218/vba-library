@@ -1,0 +1,85 @@
+Option Explicit
+
+Public Sub CompareWorkbooks()
+
+    Dim wbA As Workbook, wbB As Workbook
+    Dim wsA As Worksheet, wsB As Worksheet
+    Dim wsErr As Worksheet
+    Dim lastRow As Long, lastCol As Long
+    Dim r As Long, c As Long
+    Dim arrA As Variant, arrB As Variant
+    Dim vA As String, vB As String
+    Dim errRow As Long
+    
+    '=== 比較対象 ===
+    Set wbA = Workbooks.Open("C:\Temp\FileA.xlsx")
+    Set wbB = Workbooks.Open("C:\Temp\FileB.xlsx")
+    
+    '=== エラー出力シート ===
+    Set wsErr = ThisWorkbook.Worksheets.Add
+    wsErr.Name = "CompareResult_" & Format(Now, "hhmmss")
+    wsErr.Range("A1:E1").Value = Array("Sheet", "Cell", "FileA", "FileB", "Status")
+    errRow = 2
+    
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    
+    '=== シート単位で比較 ===
+    For Each wsA In wbA.Worksheets
+        
+        Set wsB = wbB.Worksheets(wsA.Name)
+        
+        With wsA.UsedRange
+            lastRow = .Rows.Count
+            lastCol = .Columns.Count
+            arrA = .Value
+        End With
+        
+        arrB = wsB.UsedRange.Value
+        
+        For r = 1 To lastRow
+            For c = 1 To lastCol
+                
+                vA = GetCellText(wsA.UsedRange.Cells(r, c))
+                vB = GetCellText(wsB.UsedRange.Cells(r, c))
+                
+                If vA <> vB Then
+                    wsErr.Cells(errRow, 1).Value = wsA.Name
+                    wsErr.Cells(errRow, 2).Value = wsA.UsedRange.Cells(r, c).Address(False, False)
+                    wsErr.Cells(errRow, 3).Value = vA
+                    wsErr.Cells(errRow, 4).Value = vB
+                    wsErr.Cells(errRow, 5).Value = "DIFF"
+                    errRow = errRow + 1
+                End If
+                
+            Next c
+        Next r
+        
+    Next wsA
+    
+    Application.Calculation = xlCalculationAutomatic
+    Application.ScreenUpdating = True
+    
+    MsgBox "比較完了"
+    
+End Sub
+
+
+'=== 結合セル対応 ===
+Private Function GetCellText(ByVal tgt As Range) As String
+    
+    Dim cell As Range
+    
+    If tgt.MergeCells Then
+        Set cell = tgt.MergeArea.Cells(1, 1)
+    Else
+        Set cell = tgt
+    End If
+    
+    If IsError(cell.Value) Then
+        GetCellText = "#ERROR"
+    Else
+        GetCellText = CStr(cell.Value)
+    End If
+    
+End Function
