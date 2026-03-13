@@ -1,0 +1,11 @@
+Function IsValidName(ByVal s As String) As Boolean
+
+    Dim reg As Object
+    Set reg = CreateObject("VBScript.RegExp")
+
+    reg.Pattern = "^[ぁ-んァ-ン一-龥ー　 ]+$"
+    reg.Global = False
+
+    IsValidName = reg.Test(s)
+
+End Function
