@@ -1,11 +1,23 @@
-Function IsValidName(ByVal s As String) As Boolean
-
-    Dim reg As Object
-    Set reg = CreateObject("VBScript.RegExp")
-
-    reg.Pattern = "^[ぁ-んァ-ン一-龥ー　 ]+$"
-    reg.Global = False
-
-    IsValidName = reg.Test(s)
-
+Private Function HasInvalidNameChar(ByVal targetValue As String) As Boolean
+    
+    Dim ngChars As Variant
+    Dim i As Long
+    
+    ngChars = Array( _
+    "!", """", "#", "$", "%", "&", "'", "(", ")", _
+    "*", "+", ",", ".", "/", ":", ";", "<", "=", ">", "?", "@", _
+    "[", "\", "]", "^", "_", "`", "{", "|", "}", "~", _
+    "！", "”", "＃", "＄", "％", "＆", "’", "（", "）", _
+    "＊", "＋", "，", "．", "／", "：", "；", "＜", "＝", "＞", "？", "＠" _
+)
+    
+    HasInvalidNameChar = False
+    
+    For i = LBound(ngChars) To UBound(ngChars)
+        If InStr(targetValue, ngChars(i)) > 0 Then
+            HasInvalidNameChar = True
+            Exit Function
+        End If
+    Next i
+    
 End Function
